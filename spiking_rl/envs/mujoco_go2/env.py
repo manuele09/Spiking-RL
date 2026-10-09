@@ -30,11 +30,12 @@ class Go2BalanceEnv(gym.Env):
     metadata = {"render_modes": []}
 
     def __init__(self, push=True, randomize=True, episode_s=10.0, push_vel=(0.3, 1.0), push_every=(3.0, 6.0),
-                 command_height=False, seed=None):
+                 command_height=False, seed=None, w_pose=0.5, w_action_rate=0.01, term_penalty=0.0):
         self.m = mujoco.MjModel.from_xml_path(os.path.join(MENAGERIE, "unitree_go2", "scene.xml"))
         self.m.opt.timestep = DT
         self.d = mujoco.MjData(self.m)
         self.push, self.randomize = push, randomize
+        self.w_pose, self.w_action_rate, self.term_penalty = w_pose, w_action_rate, term_penalty
         self.push_vel, self.push_every = push_vel, push_every
         self.max_steps = int(episode_s / (DT * DECIMATION))
         self.base_id = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "base")
@@ -139,12 +140,14 @@ class Go2BalanceEnv(gym.Env):
                     bad += 1
         # reward L1 (§1.3), tutti i termini x dt
         r = (-2.5 * np.sum(g[:2] ** 2) - 20.0 * (h - self.h_ref) ** 2 - 1.0 * np.sum(v_b[:2] ** 2)
-             - 2.0 * v_b[2] ** 2 - 0.05 * np.sum(d.qvel[3:6] ** 2) - 0.5 * np.sum((d.qpos[7:] - Q_DEFAULT) ** 2)
-             - 2e-4 * tau_sum / DECIMATION - 0.01 * np.sum((a - self.prev_a) ** 2)
+             - 2.0 * v_b[2] ** 2 - 0.05 * np.sum(d.qvel[3:6] ** 2) - self.w_pose * np.sum((d.qpos[7:] - Q_DEFAULT) ** 2)
+             - 2e-4 * tau_sum / DECIMATION - self.w_action_rate * np.sum((a - self.prev_a) ** 2)
              - 2.5e-7 * np.sum(((qd - self.last_qd) / self.dt) ** 2) - 1.0 * min(bad, 1) + 0.5) * self.dt
         self.prev_a, self.last_a, self.last_qd = a.copy(), a.copy(), qd.copy()
         roll_pitch_bad = np.arccos(np.clip(g[2] * -1.0, -1, 1)) > 1.0  # inclinazione totale > 1 rad
         terminated = bool(bad > 0 or roll_pitch_bad or h < 0.15)
         truncated = self.step_i >= self.max_steps
+        if terminated:
+            r -= self.term_penalty
         info = {"pushed": pushed, "height": float(h), "tilt": float(np.arccos(np.clip(-g[2], -1, 1)))}
         return self._obs(), float(r), terminated, truncated, info
