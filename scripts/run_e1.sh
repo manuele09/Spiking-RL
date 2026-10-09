@@ -11,5 +11,8 @@ for env in CartPole-v1 Pendulum-v1; do
     done
   done
 done
-printf '%s\n' "${jobs_list[@]}" | xargs -P 2 -I{} sh -c 'python -m spiking_rl.train {} > /dev/null 2>&1'
+# salta i run gia' completati (result.json presente)
+todo=()
+for j in "${jobs_list[@]}"; do out="${j##*--out }"; [ -f "$out/result.json" ] || todo+=("$j"); done
+printf '%s\n' "${todo[@]}" | xargs -P 2 -I{} sh -c 'python -m spiking_rl.train {} > /dev/null 2>&1'
 echo E1 done
