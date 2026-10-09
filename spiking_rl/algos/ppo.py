@@ -182,6 +182,9 @@ def train(cfg: PPOConfig):
             done = te or tr
         rets.append(total)
     envs.close()
-    torch.save(agent.state_dict(), os.path.join(cfg.out_dir, "agent.pt"))
+    torch.save({"state_dict": agent.state_dict(), "norm_mean": norm.mean, "norm_var": norm.var,
+                "n_obs": n_obs, "n_act": n_act, "discrete": discrete,
+                "cfg": {k: v for k, v in vars(cfg).items() if k != "log"}},
+               os.path.join(cfg.out_dir, "agent.pt"))
     return {"eval_mean": float(np.mean(rets)), "eval_std": float(np.std(rets)),
             "train_last20": float(np.mean(recent[-20:])) if recent else float("nan")}

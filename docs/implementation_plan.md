@@ -98,10 +98,10 @@ Fissate una volta e usate identiche in Isaac Lab, MuJoCo e sul robot.
 | Reward (pesi iniziali) | orientamento piatto −2.5·‖g_xy‖²; altezza base −20·(h−h_ref)² con h_ref = altezza della posa di default (≈0.30–0.32 m in Isaac [da misurare in sim]); lin_vel_xy −1·‖v_xy‖²; lin_vel_z −2; ang_vel −0.05·‖ω‖²; posa −0.5·‖q−q_def‖²; coppie −2e-4; action rate −0.01; acc. giunti −2.5e-7; penalità contatti non-piede −1; bonus sopravvivenza +0.5/step (×dt). |
 | Terminazioni | contatto base/coscia con il suolo; \|roll\|,\|pitch\| > 1 rad; h < 0.15 m; time-out 10 s. |
 | Randomizzazioni | attrito 0.5–1.25; massa base −1…+3 kg; COM ±3 cm; Kp/Kd ±10 %; ritardo azione 0–1 step (0–20 ms); rumore obs come §1.0. |
-| Disturbi | `push_by_setting_velocity` su x e y con \|Δv\| uniforme in [0.3, 1.0] m/s ogni 3–6 s (più frequente che in Isaac Lab, dove è 10–15 s e **disabilitato** nel config Go2 [V]); nel 20 % degli episodi anche impulsi di forza 50–150 N per 0.1–0.3 s. |
+| Disturbi | `push_by_setting_velocity` su x e y, direzione casuale, |Δv| uniforme in [0.3, **2.0**] m/s in training, ogni 3–6 s (Isaac Lab: 10–15 s e **disabilitato** nel config Go2 [V]). Impulsi di forza 50–150 N: non ancora implementati nell'env MuJoCo. |
 | Metriche | tasso di sopravvivenza a 10 s; tempo di recupero (da spinta a ‖v_xy‖<0.1 m/s e ‖g_xy‖<0.05); max inclinazione dopo spinta; coppia media; firing rate per strato (SNN); SynOps/inferenza. |
-| Go/no-go ANN | sopravvivenza ≥ 97 % su 500 episodi con spinte fino a 1.0 m/s; recupero medio ≤ 1.0 s. |
-| SNN passa se | sopravvivenza ≥ 95 % e recupero ≤ 1.2× ANN, con **lo stesso budget di campioni ×2**. |
+| Go/no-go ANN | **Misurato (2026-10-09, env MuJoCo):** la policy a azione zero (solo PD sulla posa di default) sopravvive 29/30 episodi con spinte ≤ 1.0 m/s e 0/20 con spinte in [1.0, 1.5] m/s (spinte ogni 1.5–3 s). Una soglia a 1.0 m/s non discrimina, quindi il criterio diventa una **curva di sopravvivenza vs intensità della spinta** (0.5, 1.0, 1.5, 2.0, 2.5 m/s; ≥ 30 episodi per punto; `python -m spiking_rl.eval.push_curve`). ANN passa se la sopravvivenza è ≥ 97 % a 1.5 m/s e ≥ 80 % a 2.0 m/s [soglie da ricalibrare dopo il primo run ANN]. |
+| SNN passa se | sopravvivenza ≥ 95 % a 1.5 m/s e curva non peggiore dell'ANN di oltre 10 punti percentuali a nessuna intensità, con **lo stesso budget di campioni ×2**. |
 | Criterio per L2 | ANN e almeno un'architettura SNN passano; curve e tabella archiviate (§4). |
 
 Perché L1 prima di tutto: separa "il decoder SNN produce azioni abbastanza precise e stabili" dal problema del gait; è anche il primo task sensato su robot reale (L8-ii) e l'unica cosa che un SNN+RL ha già fatto su un quadrupede reale (progetto PuppyPi, [S] nella rassegna).
