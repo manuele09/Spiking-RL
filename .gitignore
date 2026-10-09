@@ -1,0 +1,19 @@
+
+# ambienti e dipendenze locali
+.venv/
+venv/
+__pycache__/
+*.pyc
+third_party/
+# output esperimenti
+logs/
+runs/
+wandb/
+outputs/
+multirun/
+checkpoints/
+*.pt
+*.onnx
+# varie
+.ipynb_checkpoints/
+.DS_Store
