@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+import spiking_rl.envs  # noqa: F401  (registra Go2Balance-v0)
 from spiking_rl.models import ActorCritic
 
 
@@ -37,6 +38,8 @@ class PPOConfig:
     alpha_end: float = 2.0
     out_dir: str = "runs/tmp"
     eval_episodes: int = 20
+    async_envs: bool = False
+    env_kwargs: dict = field(default_factory=dict)
     log: dict = field(default_factory=dict)
 
 
@@ -55,9 +58,9 @@ class RunningNorm:
         return np.clip((x - self.mean) / np.sqrt(self.var + 1e-8), -10, 10)
 
 
-def make_env(env_id, gamma, normalize_reward):
+def make_env(env_id, gamma, normalize_reward, env_kwargs=None):
     def thunk():
-        e = gym.make(env_id)
+        e = gym.make(env_id, **(env_kwargs or {}))
         e = gym.wrappers.RecordEpisodeStatistics(e)
         if normalize_reward and isinstance(e.action_space, gym.spaces.Box):
             e = gym.wrappers.NormalizeReward(e, gamma=gamma)
@@ -69,10 +72,9 @@ def train(cfg: PPOConfig):
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.set_num_threads(max(1, os.cpu_count() // 2))
-    envs = gym.vector.SyncVectorEnv(
-        [make_env(cfg.env_id, cfg.gamma, True) for _ in range(cfg.num_envs)],
-        autoreset_mode=gym.vector.AutoresetMode.SAME_STEP,
-    )
+    VecEnv = gym.vector.AsyncVectorEnv if cfg.async_envs else gym.vector.SyncVectorEnv
+    envs = VecEnv([make_env(cfg.env_id, cfg.gamma, True, cfg.env_kwargs) for _ in range(cfg.num_envs)],
+                  autoreset_mode=gym.vector.AutoresetMode.SAME_STEP)
     discrete = isinstance(envs.single_action_space, gym.spaces.Discrete)
     n_obs = int(np.prod(envs.single_observation_space.shape))
     n_act = int(envs.single_action_space.n) if discrete else int(np.prod(envs.single_action_space.shape))
@@ -167,7 +169,7 @@ def train(cfg: PPOConfig):
     f.close()
 
     # valutazione deterministica con normalizzazione congelata
-    env = gym.make(cfg.env_id)
+    env = gym.make(cfg.env_id, **cfg.env_kwargs)
     rets = []
     for ep in range(cfg.eval_episodes):
         o, _ = env.reset(seed=10_000 + ep)
