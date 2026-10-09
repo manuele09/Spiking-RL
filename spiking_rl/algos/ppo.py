@@ -39,6 +39,7 @@ class PPOConfig:
     out_dir: str = "runs/tmp"
     eval_episodes: int = 20
     async_envs: bool = False
+    init_log_std: float = 0.0
     env_kwargs: dict = field(default_factory=dict)
     log: dict = field(default_factory=dict)
 
@@ -79,7 +80,7 @@ def train(cfg: PPOConfig):
     n_obs = int(np.prod(envs.single_observation_space.shape))
     n_act = int(envs.single_action_space.n) if discrete else int(np.prod(envs.single_action_space.shape))
     agent = ActorCritic(n_obs, n_act, discrete, cfg.actor, cfg.hidden, T=cfg.T, neuron=cfg.neuron,
-                        encoding=cfg.encoding)
+                        encoding=cfg.encoding, init_log_std=cfg.init_log_std)
     opt = torch.optim.Adam(agent.parameters(), lr=cfg.lr, eps=1e-5)
     norm = RunningNorm((n_obs,))
     low = None if discrete else envs.single_action_space.low

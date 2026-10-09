@@ -85,7 +85,7 @@ class ActorCritic(nn.Module):
     """Actor intercambiabile (ANN/SNN) + critic ANN. Azioni continue (gaussiana) o discrete (categorica)."""
 
     def __init__(self, n_obs, n_act, discrete, actor_kind="ann", hidden=(128, 128), critic_hidden=(128, 128),
-                 T=4, neuron="lif", encoding="direct", carry=False):
+                 T=4, neuron="lif", encoding="direct", carry=False, init_log_std=0.0):
         super().__init__()
         self.discrete = discrete
         if actor_kind == "ann":
@@ -94,7 +94,7 @@ class ActorCritic(nn.Module):
             self.actor = SpikingActor(n_obs, n_act, hidden, T=T, neuron=neuron, encoding=encoding, carry=carry)
         self.critic = mlp(n_obs, critic_hidden, 1, out_std=1.0)
         if not discrete:
-            self.log_std = nn.Parameter(torch.zeros(n_act))
+            self.log_std = nn.Parameter(torch.full((n_act,), float(init_log_std)))
 
     def value(self, obs):
         return self.critic(obs).squeeze(-1)

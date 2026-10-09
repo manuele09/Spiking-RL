@@ -18,7 +18,7 @@ def load(run_dir):
     ck = torch.load(os.path.join(run_dir, "agent.pt"), weights_only=False)
     c = ck["cfg"]
     agent = ActorCritic(ck["n_obs"], ck["n_act"], ck["discrete"], c["actor"], tuple(c["hidden"]), T=c["T"],
-                        neuron=c["neuron"], encoding=c["encoding"])
+                        neuron=c["neuron"], encoding=c["encoding"], init_log_std=c.get("init_log_std", 0.0))
     agent.load_state_dict(ck["state_dict"])
     agent.eval()
     return agent, ck, c
