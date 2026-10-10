@@ -57,6 +57,8 @@ class SpikingActor(nn.Module):
         nn.init.zeros_(self.out.bias)
         self.T, self.carry = T, carry
         self.last_rates = [0.0] * len(self.layers)
+        self.record_spikes = False
+        self.spike_counts = None  # (n_layers,) spike totali per inferenza (somma su T e neuroni), media sul batch
 
     def reset(self, batch, device, dones=None):
         for l in self.layers:
@@ -71,13 +73,18 @@ class SpikingActor(nn.Module):
             self.reset(obs.shape[0], obs.device)
         x0 = self.enc(obs)
         acc, rates = 0.0, [0.0] * len(self.layers)
+        counts = [0.0] * len(self.layers)
         for _ in range(self.T):
             x = x0
             for i, l in enumerate(self.layers):
                 x = l(x)
                 rates[i] = rates[i] + x.detach().mean() / self.T
+                if self.record_spikes:
+                    counts[i] = counts[i] + x.detach().sum(1).mean()
             acc = acc + self.out(x)
         self.last_rates = [float(r) for r in rates]
+        if self.record_spikes:
+            self.spike_counts = [float(c) for c in counts]
         return acc / self.T
 
 

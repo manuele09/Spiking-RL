@@ -30,12 +30,16 @@ class Go2BalanceEnv(gym.Env):
     metadata = {"render_modes": []}
 
     def __init__(self, push=True, randomize=True, episode_s=10.0, push_vel=(0.3, 1.0), push_every=(3.0, 6.0),
-                 command_height=False, seed=None, w_pose=0.5, w_action_rate=0.01, term_penalty=0.0):
+                 command_height=False, seed=None, w_pose=0.5, w_action_rate=0.01, term_penalty=0.0,
+                 friction=None, payload=None, delay_steps=None, obs_noise_scale=1.0, fault_leg=None, fault_kp_scale=0.7):
         self.m = mujoco.MjModel.from_xml_path(os.path.join(MENAGERIE, "unitree_go2", "scene.xml"))
         self.m.opt.timestep = DT
         self.d = mujoco.MjData(self.m)
         self.push, self.randomize = push, randomize
         self.w_pose, self.w_action_rate, self.term_penalty = w_pose, w_action_rate, term_penalty
+        # condizioni fisse per i test di robustezza (None = randomizzazione di training)
+        self.fix_friction, self.fix_payload, self.fix_delay = friction, payload, delay_steps
+        self.obs_noise_scale, self.fault_leg, self.fault_kp_scale = obs_noise_scale, fault_leg, fault_kp_scale
         self.push_vel, self.push_every = push_vel, push_every
         self.max_steps = int(episode_s / (DT * DECIMATION))
         self.base_id = mujoco.mj_name2id(self.m, mujoco.mjtObj.mjOBJ_BODY, "base")
@@ -64,7 +68,7 @@ class Go2BalanceEnv(gym.Env):
         qd = d.qvel[6:]
         w_body = d.qvel[3:6]  # in MuJoCo la velocita' angolare libera e' gia' nel frame locale
         g = _rot_inv(d.qpos[3:7], np.array([0.0, 0.0, -1.0]))
-        noise = self.rng.uniform(-1, 1, 45) if self.randomize else np.zeros(45)
+        noise = self.rng.uniform(-1, 1, 45) * self.obs_noise_scale if self.randomize else np.zeros(45)
         o = np.concatenate([w_body, g, np.zeros(3), q - Q_DEFAULT, qd, self.last_a])
         o = o + noise * np.concatenate([np.full(3, 0.2), np.full(3, 0.05), np.zeros(3),
                                         np.full(12, 0.01), np.full(12, 1.5 * 0.1), np.zeros(12)])
@@ -92,9 +96,17 @@ class Go2BalanceEnv(gym.Env):
             self.kp = KP * self.rng.uniform(0.9, 1.1, 12)
             self.kd = KD * self.rng.uniform(0.9, 1.1, 12)
             self.delay = int(self.rng.integers(0, 2))
+        if self.fix_payload is not None:
+            m.body_mass[self.base_id] = self.mass0 + self.fix_payload
+        if self.fix_friction is not None:
+            m.geom_friction[self.floor_id, 0] = self.fix_friction
+        if self.fix_delay is not None:
+            self.delay = int(self.fix_delay)
+        if self.fault_leg is not None:  # guasto attuatore: Kp ridotto su una gamba (0=FL,1=FR,2=RL,3=RR)
+            self.kp[3 * self.fault_leg:3 * self.fault_leg + 3] *= self.fault_kp_scale
         self.last_a = np.zeros(12)
         self.prev_a = np.zeros(12)
-        self.a_buf = np.zeros(12)
+        self.a_buf = [np.zeros(12) for _ in range(max(self.delay, 1))]
         self.step_i = 0
         self.next_push = self._next_push_time()
         mujoco.mj_forward(m, d)
@@ -106,8 +118,11 @@ class Go2BalanceEnv(gym.Env):
 
     def step(self, action):
         a = np.clip(np.asarray(action, dtype=np.float64), -ACT_CLIP, ACT_CLIP)
-        applied = self.a_buf if self.delay else a  # ritardo di un passo di policy (20 ms)
-        self.a_buf = a
+        # ritardo di `delay` passi di policy (20 ms ciascuno)
+        self.a_buf.append(a)
+        applied = self.a_buf.pop(0) if self.delay else a
+        if not self.delay:
+            self.a_buf = self.a_buf[-1:]
         q_des = Q_DEFAULT + ACT_SCALE * applied
         d, m = self.d, self.m
         tau_sum = 0.0

@@ -26,3 +26,15 @@ Firing rate a fine training (strato 1 / strato 2): SNN T=4 0.26 / 0.49; SNN T=1 
 - SNN T=4 vs ANN a 1.0 m/s (26 vs 28/30): differenza dentro il rumore. SNN T=1 (20/30) è plausibilmente peggiore, ma serve più di 1 seed.
 - Nessun limite superiore a 1.2 m/s per nessuno: lo stesso setup non generalizza a spinte oltre il range di training.
 - Nessuna misura di energia/SynOps; nessuna robustezza ad altro (attrito, carico, latenza).
+
+## Conto operazioni/energia (Appendice B, `python -m spiking_rl.eval.synops`), un episodio di test con spinta 1.0 m/s
+Convenzione 45 nm: 0.9 pJ per AC, 4.6 pJ per MAC. NON sono misure; ignorano aggiornamento dei neuroni, memoria e traffico.
+
+| Actor | MAC | AC (spike × fan-out) | Energia stimata |
+|---|---|---|---|
+| ANN 45→128→128→12 | 23 680 | 0 | 109 nJ |
+| SNN T=4 (conservativo: primo strato contato T volte) | 23 040 | 15 457 | 120 nJ (1.1× l'ANN: peggiore) |
+| SNN T=4 (ottimizzato: corrente W·obs calcolata una sola volta) | 5 760 | 15 457 | 40 nJ (2.7× meglio dell'ANN) |
+
+Spike medi per inferenza per strato: 101 e 213 (firing rate 0.2 e 0.49). Il secondo strato è molto attivo, e per questo il risparmio è modesto
+con full accounting. Coerente con la letteratura (Yan et al. 2409.08290: il vantaggio esiste solo con firing rate molto bassi).

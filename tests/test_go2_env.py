@@ -31,3 +31,12 @@ def test_fall_terminates():
         if term:
             break
     assert term
+
+
+def test_robustness_kwargs():
+    for kw in ({"friction": 0.3}, {"payload": 5.0}, {"delay_steps": 3}, {"obs_noise_scale": 4.0}, {"fault_leg": 2}):
+        e = gym.make("Go2Balance-v0", push=False, **kw)
+        e.reset(seed=0)
+        for _ in range(20):
+            o, r, te, tr, _ = e.step(np.zeros(12))
+        assert np.isfinite(o).all()
