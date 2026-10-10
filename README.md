@@ -1,6 +1,6 @@
 # Spiking-RL — policy spiking per la locomozione del Unitree Go2
 
-Stato: **fase di pianificazione**. Nessun training implementato.
+Stato: L0–L1 completati su CPU (MuJoCo); vedi `CLAUDE.md` per lo stato aggiornato, `docs/results_L1.md` per i risultati.
 
 - `docs/literature_review.md` — rassegna bibliografica.
 - `docs/sources_verification.md` — cosa della rassegna è stato verificato/corretto (2026-10-09).

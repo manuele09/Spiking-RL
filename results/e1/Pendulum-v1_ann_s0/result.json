@@ -1,0 +1,15 @@
+{
+ "env": "Pendulum-v1",
+ "actor": "ann",
+ "T": 4,
+ "neuron": "lif",
+ "encoding": "direct",
+ "seed": 0,
+ "steps": 300000,
+ "num_envs": 8,
+ "lr": 0.0003,
+ "out": "runs/e1/Pendulum-v1_ann_s0",
+ "eval_mean": -129.43698936388012,
+ "eval_std": 86.80492582043216,
+ "train_last20": -203.55433295947512
+}

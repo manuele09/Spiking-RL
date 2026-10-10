@@ -1,0 +1,15 @@
+{
+ "env": "CartPole-v1",
+ "actor": "snn",
+ "T": 1,
+ "neuron": "lif",
+ "encoding": "direct",
+ "seed": 1,
+ "steps": 100000,
+ "num_envs": 8,
+ "lr": 0.0003,
+ "out": "runs/e1/CartPole-v1_snn_T1_s1",
+ "eval_mean": 500.0,
+ "eval_std": 0.0,
+ "train_last20": 500.0
+}

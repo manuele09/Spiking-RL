@@ -1,0 +1,15 @@
+{
+ "run": "go2_l1D_snn_T4_s0",
+ "actor": "snn",
+ "mean_spikes_per_inference_per_layer": [
+  100.782,
+  213.074
+ ],
+ "T": 4,
+ "mac_conservative": 23040,
+ "mac_once": 5760,
+ "ac": 15456.984,
+ "energy_pj_conservative": 119895.28559999999,
+ "energy_pj_optimized": 40407.285599999996,
+ "synops_only_ac": 15456.984
+}

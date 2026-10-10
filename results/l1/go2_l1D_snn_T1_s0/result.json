@@ -1,0 +1,18 @@
+{
+ "env": "Go2Balance-v0",
+ "actor": "snn",
+ "T": 1,
+ "neuron": "lif",
+ "encoding": "direct",
+ "seed": 0,
+ "steps": 2500000,
+ "num_envs": 8,
+ "lr": 0.0003,
+ "init_log_std": -1.2,
+ "async_envs": true,
+ "env_kwargs": "{\"push_vel\": [0.3, 1.2], \"push_every\": [1.0, 2.0], \"w_pose\": 0.05, \"w_action_rate\": 0.002, \"term_penalty\": 1.0}",
+ "out": "runs/go2_l1D_snn_T1_s0",
+ "eval_mean": 3.0364609508005844,
+ "eval_std": 1.6846023593012558,
+ "train_last20": 2.8769787154449102
+}
