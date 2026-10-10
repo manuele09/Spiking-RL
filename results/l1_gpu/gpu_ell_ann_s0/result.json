@@ -1,0 +1,19 @@
+{
+ "actor": "ann",
+ "T": 4,
+ "neuron": "lif",
+ "encoding": "direct",
+ "seed": 0,
+ "steps": 9994240,
+ "num_envs": 1024,
+ "rollout": 32,
+ "epochs": 8,
+ "minibatches": 8,
+ "lr": 0.0003,
+ "init_log_std": -1.2,
+ "env_kwargs": "{\"cone\":\"elliptic\",\"push_vel\":[0.3,1.2],\"push_every\":[1.0,2.0],\"w_pose\":0.05,\"w_action_rate\":0.002,\"term_penalty\":1.0}",
+ "init_from": null,
+ "out": "runs/gpu_ell_ann_s0",
+ "train_last_return": 3.4080801010131836,
+ "wall_s": 1936.7727451324463
+}

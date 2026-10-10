@@ -1,0 +1,3 @@
+push 0.5 m/s: sopravvivenza 30/30  ritorno 3.92  inclinazione max 0.08 rad
+push 1.0 m/s: sopravvivenza 26/30  ritorno 2.90  inclinazione max 0.28 rad
+push 1.5 m/s: sopravvivenza 0/30  ritorno 0.21  inclinazione max 0.87 rad
