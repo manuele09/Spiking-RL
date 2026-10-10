@@ -188,12 +188,15 @@ class Go2BalanceMJX:
              - 2e-4 * tau_sum / DECIMATION - self.w_action_rate * jnp.sum((a - s.last_a) ** 2)
              - 2.5e-7 * jnp.sum(((qd - s.last_qd) / self.dt) ** 2) - 1.0 * jnp.minimum(bad, 1) + 0.5) * self.dt
         tilt = jnp.arccos(jnp.clip(-g[2], -1.0, 1.0))
-        term = (bad > 0) | (tilt > 1.0) | (h < 0.15)
+        # stato non finito (instabilita' del solver con pochi iterazioni): termina e resetta invece di propagare i NaN
+        nonfinite = ~(jnp.all(jnp.isfinite(d.qpos)) & jnp.all(jnp.isfinite(d.qvel)))
+        term = (bad > 0) | (tilt > 1.0) | (h < 0.15) | nonfinite
+        r = jnp.nan_to_num(r, nan=-1.0)
         trunc = step_i >= self.max_steps
         r = r - jnp.where(term, self.term_penalty, 0.0)
         ep_ret = s.ep_ret + r
         s2 = EnvState(d, a, hist, qd, s.delay, s.kp, s.kd, s.mass, s.fric, step_i, next_push, k[3], ep_ret)
-        final_obs = self._obs(d, a, k[4])
+        final_obs = jnp.nan_to_num(self._obs(d, a, k[4]))
         done = term | trunc
         s_reset, obs_reset = self._reset_one(k[5])
         # autoreset: sostituisco solo lo stato di integrazione (il resto di Data viene ricalcolato da mjx.step)

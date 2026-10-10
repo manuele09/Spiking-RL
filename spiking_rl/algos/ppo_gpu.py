@@ -51,6 +51,13 @@ def train_gpu(cfg: PPOConfig):
                         encoding=cfg.encoding, init_log_std=cfg.init_log_std).to(dev)
     opt = torch.optim.Adam(agent.parameters(), lr=cfg.lr, eps=1e-5)
     norm, rnorm = TorchNorm((n_obs,), dev), TorchNorm((), dev)
+    init_from = getattr(cfg, "init_from", None)
+    if init_from:  # rifinitura: riparte da un checkpoint (pesi + statistiche di normalizzazione delle obs)
+        ck = torch.load(os.path.join(init_from, "agent.pt"), weights_only=False)
+        agent.load_state_dict(ck["state_dict"])
+        norm.mean = torch.as_tensor(ck["norm_mean"], dtype=torch.float32, device=dev)
+        norm.var = torch.as_tensor(ck["norm_var"], dtype=torch.float32, device=dev)
+        norm.count = 1e6  # statistiche gia' stabili: non farle muovere troppo
     acc_ret = torch.zeros(N, device=dev)
     n_iters = cfg.total_steps // (N * R)
     os.makedirs(cfg.out_dir, exist_ok=True)

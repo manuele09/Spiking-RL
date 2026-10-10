@@ -22,12 +22,14 @@ def main():
     p.add_argument("--lr", type=float, default=3e-4)
     p.add_argument("--init-log-std", type=float, default=-1.2)
     p.add_argument("--env-kwargs", default="{}", help="JSON per Go2BalanceMJX")
+    p.add_argument("--init-from", default=None, help="run_dir da cui riprendere pesi e normalizzazione (rifinitura)")
     p.add_argument("--out", required=True)
     a = p.parse_args()
     cfg = PPOConfig(env_id="Go2Balance-v0", actor=a.actor, T=a.T, neuron=a.neuron, encoding=a.encoding, seed=a.seed,
                     total_steps=a.steps, num_envs=a.num_envs, rollout=a.rollout, epochs=a.epochs,
                     minibatches=a.minibatches, lr=a.lr, out_dir=a.out, init_log_std=a.init_log_std,
                     env_kwargs=json.loads(a.env_kwargs))
+    cfg.init_from = a.init_from
     res = train_gpu(cfg)
     json.dump({**vars(a), **res}, open(os.path.join(a.out, "result.json"), "w"), indent=1)
     print(json.dumps(res))
